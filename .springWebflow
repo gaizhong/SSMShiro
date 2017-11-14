@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<webflow-project-description>
+	<version>1</version>
+	<pluginVersion><![CDATA[3.9.0.201707061730-RELEASE]]></pluginVersion>
+	<configs>
+		<config>
+			<file>WebContent/WEB-INF/app.xml</file>
+			<name><![CDATA[app]]></name>
+			<beans-config><![CDATA[1:BeansModel|2:ssmshiro|3:src/spring-servlet.xml]]></beans-config>
+		</config>
+	</configs>
+</webflow-project-description>
