@@ -1,0 +1,178 @@
+		导入项目所需jar包
+1,配置好Spring及Springmvc
+	1.1  web.xml中直接输入ContextLoaderListener,快捷键提示，会自动加好Spring的配置	
+	1.2	 web.xml中直接输入DispatcherServlet，快捷键提示，项目会自动配置好Springmvc配置
+	1.3     在源目录创建applicationContext.xml,
+		  项目右击新建other-->输入Spring-->选择Spring bean configuration file, 
+		 next-->勾选beans,context,cache(缓存)-->finish
+	1.4    根据web.xml中的dispatcherServlet配置路径，在对应位置创建XXX-servlet.xml(Springmvc文件)
+	 	 默认路径在web同级,选择文件路径
+	 	 右击新建Spring-servlet.xml,
+	 	 项目右击新建other-->输入Spring-->选择Spring bean configuration file,
+	 	 next-->beans,context,mvc-->finish
+	 	 输入InternalResourceViewResolver,快捷键提示,然后在这个bean中配置
+	 	 <property name="prefix" value="/"></property>   <!-- 前缀-->
+	 	 <property name="suffix" value=".jsp"></property>   <!-- 后缀-->
+	 	 再配置<mvc:annotation-driven></mvc:annotation-driven>驱动扫描(只扫描controller层)
+	 	<context:component-scan base-package="com.ssmshiro.control"></context:component-scan>
+    1.5	至此关于Spring,springmvc已经配置完成,编写jsp和controller映射测试，完成后继续后续步骤
+2,配置shiro
+	2.1 下载shiro源码F:\java必备\ssm及其关联\
+	shiro-root-1.3.2-source-release\shiro-root-1.3.2\
+	samples\spring\src\main\webapp\WEB-INF\web.xml中的filter复制到项目中web.xml中
+		<filter>
+	        <filter-name>shiroFilter</filter-name>
+	        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+	        <init-param>
+	            <param-name>targetFilterLifecycle</param-name>
+	            <param-value>true</param-value>
+	        </init-param>
+	    </filter>
+	
+	    <filter-mapping>
+	        <filter-name>shiroFilter</filter-name>
+	        <url-pattern>/*</url-pattern>
+	    </filter-mapping>
+	加入shiro过滤器
+	2.2 在applicationContext.xml中配置属性文件，简略方法，可以复制
+	shiro-root-1.3.2-source-release\shiro-root-1.3.2\
+	samples\spring\src\main\webapp\WEB-INF\applicationContext.xml中的属性全部复制到项目中的applicationContext.xml中
+	去除不需要的配置
+	2.2.1	配置securitymanager
+			<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+				<property name="cacheManager" ref="cacheManager"/>	<!--配置缓存,目前没需要-->
+				<property name="sessionMode" value="native"/>		<!--类似HttpSession,但绝不是HttpSession,用来存信息的-->
+				<property name="realm" ref="jdbcRealm"/>	<!-- 至关重要,配置认证和授权作用 -->
+			</bean>
+	2.2.2	配置缓存,目前可以省略
+			<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        		<property name="cacheManagerConfigFile" value="classpath:ehcache.xml"/> 
+   			</bean>
+   			<!--至关重要,这就是shiro起作用的地方-->
+   2.2.3	<bean id="jdbcRealm" class="com.ssmshiro.realms.FirstRealms"><!--引用到SecurityManager里面-->
+   				<!--这个里面是配置加密,开始测试的时候可以不要-->
+		    	<property name="credentialsMatcher">
+		    		<bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+		    			<property name="hashAlgorithmName" value="MD5"></property>
+		    			<property name="hashIterations" value="1024"></property>
+		    		</bean>
+		    	</property>
+   			</bean>
+   			<!-- 配置shiro注入的设置-->
+	2.2.4	<!-- 配置lifecycleBeanPostProcessor可以自动的调用配置在Spring IOC容器中shiro的生命周期方法 -->
+		    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+			<!-- 启用IOC中shiro的注解，但必须在配置这个之后 -->
+			<bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+			      depends-on="lifecycleBeanPostProcessor"/>
+			<bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+			     <property name="securityManager" ref="securityManager"/>
+			</bean>
+	2.2.5	<!--配置访问权限-->
+			<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		        <property name="securityManager" ref="securityManager"/>
+		        <property name="loginUrl" value="/login.jsp"/>
+		        <property name="successUrl" value="/hello.jsp"/>	#验证成功路径
+		        <property name="unauthorizedUrl" value="/unauthorized.jsp"/>#权限不够跳转的路径
+	       <!-- 配置那些页面需要受保护及访问
+	       	这些页面所需要的权限 -->
+	       	<!-- anon 可以被匿名访问 -->
+	        <property name="filterChainDefinitions">
+	            <value>
+	                /login.jsp = anon	#免验证路径
+	                /shiro/login=anon
+	                /shiro/logout=logout    <!-- 这个在做退出时，必须添加，不然从缓存读取，没有事登录信息销毁 -->
+	                # everything else requires authentication:
+	                /** = authc	<!-- 必须登录后才能访问 -->
+	                
+	            </value>
+	        </property>
+	    </bean>
+	
+	---------------------------------Java---------------------------------------------
+3,提交数据及验证
+	3.1	<form action="shiro/login">...</form>
+	3.2	@Controller
+		@RequestMapping("/shiro")
+		@RequestMapping("/login")//不知道为什么用Autowired注入不了request对象,其他项目又可以,待解决问题
+		public String login(HttpServletRequest request,HttpServletResponse response){
+			String username=request.getParameter("username");//简单获取登录信息
+			String password=request.getParameter("password");
+			//用shiro接收当前登录用户对象
+			Subject subject=SecurityUtils.getSubject();
+			//把登录信息存到token对象中
+			UsernamePasswordToken putoken=new UsernamePasswordToken(username, password);
+		//如果用户没被认证,进行认证
+		if(!subject.isAuthenticated()){
+			try {
+			//跳转到shiro的realm中
+				subject.login(putoken);
+			} catch (AuthenticationException e) {
+			//如果认证失败，跳转到登录的页面,也就是applicationContext.xml中配置的/login.jsp=anon
+				System.out.println("认证失败。。。。。。");
+				e.getMessage();
+			}
+		}
+		//认证成功,跳转到成功页面
+		return "redirect:/hello.jsp";
+	3.3配置认证(授权做，后面换类的实现做认证和授权，这里只有认证)
+		public class FirstRealms extends AuthenticatingRealm {
+		@Override
+		protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
+			System.out.println("[FirstRealm] doGetAuthenticationInfo");
+			//AuthenticationToken对象先转成传入的UsernamePasswordToken对象
+			UsernamePasswordToken uptoken=(UsernamePasswordToken)token;
+			//登录时用户输入名字和密码
+			String username=uptoken.getUsername();
+			String password=String.valueOf(uptoken.getPassword());
+			Object principal=username;
+			//fc1709d0a95a6be30bc5926fdb7f22f4   123456经过 MD5加密后1024次后
+	//		Object credentials="123456";
+			//从数据库获取的密码(本程序是静态数据,这里的明文或者密文取决于ApplicationContext.xml中是否配置加密属性)
+			Object credentials="fc1709d0a95a6be30bc5926fdb7f22f4";
+			String realmName=getName();
+			if("admin".equals(username)){
+				credentials="038bdaf98f2037b31f1e75b5b4c9b26e";
+			}else if("user".equals(username)){
+				credentials="098d2c478e9c11555ce2823231e02ec1";
+			}
+			//加密的盐，可以用简单的String对象替换credentialsSalt
+			ByteSource credentialsSalt=ByteSource.Util.bytes(username);
+			SimpleAuthenticationInfo info=new 
+			//第一种不加盐信息比对
+	//				SimpleAuthenticationInfo(principal, credentials, realmName);
+				//加盐信息比对
+				SimpleAuthenticationInfo(principal, credentials, credentialsSalt, realmName)	;
+	//至此完成认证
+			return info;
+		}
+	}
+4,授权操作,权限注解认证
+	4.1授权	extends AuthorizingRealm 注意释两种继承类，第一种只认证，第二种认证+授权
+		@Override//授权的时候的处理
+		protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principle) {
+			System.out.println("授权操作doGetAuthorizationInfo......");
+			//获取用户登录信息
+			Object object = principle.getPrimaryPrincipal();
+			Set<String> roles=new HashSet<String>();
+			roles.add("user");
+			if("admin".equals(object)){
+				roles.add("admin");
+			}
+			SimpleAuthorizationInfo sainfo=new SimpleAuthorizationInfo(roles);
+			return sainfo;
+		}
+	
+	4.2注解 添加Service层
+	public class ShiroService {
+	//注意释加在方法上，而且不能用@Service注解，否则@@RequiresRoles({"admin"})失效
+			(如果必要，把
+			<bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+		          depends-on="lifecycleBeanPostProcessor"/>
+		         	 放到Springmvc的配置文件里
+		     )
+		@RequiresRoles({"admin"})
+		public void testMethod() {
+			System.out.println("testService");
+	
+		}
+	}
