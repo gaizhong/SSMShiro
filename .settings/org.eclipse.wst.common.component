@@ -2,6 +2,7 @@
     <wb-module deploy-name="ssmshiro">
         <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/config"/>
         <property name="context-root" value="ssmshiro"/>
         <property name="java-output-path" value="/ssmshiro/build/classes"/>
     </wb-module>

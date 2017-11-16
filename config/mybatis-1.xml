@@ -34,6 +34,19 @@
         <property name="configLocation" value="classpath:mybatis-config.xml"></property>
   		<!--  <property name="mapperLocations" value="classpath:mybatis/*.xml"></property> -->
     </bean>
-	
+
+				<!-- 配置第二个数据源 -->
+	<bean id="dataSource2" class="org.apache.commons.dbcp.BasicDataSource"  
+        destroy-method="close">  
+        <property name="driverClassName" value="${driver2}" />  
+        <property name="url" value="${url2}" />  
+        <property name="username" value="${username2}" />  
+        <property name="password" value="${password2}" />  
+    </bean>	
+    
+     <bean id="sqlSessionFactory2" class="org.mybatis.spring.SqlSessionFactoryBean">  
+        <property name="dataSource" ref="dataSource2" />  
+        <property name="configLocation" value="classpath:mybatis-config2.xml"></property>
+    </bean>
 
 </beans>

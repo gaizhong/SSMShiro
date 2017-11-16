@@ -39,6 +39,7 @@
     			<property name="hashIterations" value="1024"></property>
     		</bean>
     	</property>
+    	
     </bean>
     <bean  id="secondRealm" class="com.ssmshiro.realms.SecondShiroRealm">
     	<property name="credentialsMatcher">
