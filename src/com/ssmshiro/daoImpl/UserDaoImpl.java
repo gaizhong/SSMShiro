@@ -17,14 +17,14 @@ import org.springframework.stereotype.Repository;
 import com.ssmshiro.dao.UserDao;
 @Repository
 public class UserDaoImpl implements UserDao{
-	@Resource(name="sqlSessionFactory")
+	@Resource(name="sqlSessionFactory2")
 	SqlSessionFactory sqlSessionFactory;
 	@Override
 	public List<Map<String, String>> queryUser(Map map) {
 		 SqlSession session = sqlSessionFactory.openSession();
 //		return session.selectOne("mybatis.mybatis.querybyname", map);
 		 System.out.println("-------daoimpl-------"+session);
-		List list=session.selectList("mybatis.querybyname");
+		List list=session.selectList("mybatis2.now");
 //		session.selectOne("mybatisss.querybyname");
 		System.out.println("list--->"+list);
 		return list;
